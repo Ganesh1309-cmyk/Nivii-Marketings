@@ -56,25 +56,34 @@
                 const rows = json.table.rows;
                 let productsHTML = "";
 
-                rows.forEach(row => {
-                    const id = row.c[0]?.v || "N/A";
-                    const name = row.c[1]?.v || "No Name";
-                    const imageUrl = row.c[2]?.v || "https://via.placeholder.com/150";
-                    const specifications = row.c[3]?.v || "No Specifications";
-                    const keyFeatures = row.c[4]?.v || "No Features";
-                    const description = row.c[5]?.v || "No Description";
-                    const price = row.c[6]?.v || 0;
+                rows.forEach((row, index) => {
+                    const productId = `P${index + 1}`;  // Unique Product ID
+                    const name = row.c[0]?.v || "No Name";
+                    let imageUrl = row.c[1]?.v || "https://via.placeholder.com/150";
+                    
+                    // Ensure proper image URL from Google Sheets
+                    if (imageUrl.includes("drive.google.com")) {
+                        const fileId = imageUrl.match(/[-\w]{25,}/);
+                        if (fileId) {
+                            imageUrl = `https://drive.google.com/uc?export=view&id=${fileId[0]}`;
+                        }
+                    }
+
+                    const specifications = row.c[2]?.v || "No Specifications";
+                    const keyFeatures = row.c[3]?.v || "No Features";
+                    const description = row.c[4]?.v || "No Description";
+                    const price = row.c[5]?.v || 0;
 
                     productsHTML += `
                         <div class="product">
                             <img src="${imageUrl}" alt="${name}">
                             <h3>${name}</h3>
-                            <p><strong>ID:</strong> ${id}</p>
+                            <p><strong>Product ID:</strong> ${productId}</p>
                             <p><strong>Specifications:</strong> ${specifications}</p>
                             <p><strong>Features:</strong> ${keyFeatures}</p>
                             <p><strong>Description:</strong> ${description}</p>
                             <p><strong>Price: ₹${price}</strong></p>
-                            <button onclick="addToCart('${id}', '${name}', ${price}, '${imageUrl}', '${specifications}', '${keyFeatures}', '${description}')">Add to Cart</button>
+                            <button onclick="addToCart('${productId}', '${name}', ${price}, '${imageUrl}', '${specifications}', '${keyFeatures}', '${description}')">Add to Cart</button>
                         </div>
                     `;
                 });
@@ -136,7 +145,7 @@
                 return;
             }
 
-            let orderDetails = cart.map(item => `• ${item.name} (ID: ${item.id}) - ₹${item.price} \n Specifications: ${item.specifications} \n Features: ${item.keyFeatures} \n Description: ${item.description}`).join("\n\n");
+            let orderDetails = cart.map(item => `• ${item.name} (ID: ${item.id}) - ₹${item.price}`).join("\n");
 
             let totalPrice = cart.reduce((sum, item) => sum + item.price, 0);
 
@@ -150,14 +159,12 @@
             };
 
             emailjs.send("service_61rkqgd", "template_yraji6o", templateParams)
-            .then(response => {
+            .then(() => {
                 alert("Order placed successfully!");
                 cart = [];
                 localStorage.removeItem("cart");
                 updateCart();
                 document.getElementById("checkout-container").style.display = "none";
-            }, error => {
-                alert("Failed to send email. Please try again.");
             });
         }
 
