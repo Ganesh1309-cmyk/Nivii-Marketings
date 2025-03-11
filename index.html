@@ -57,9 +57,9 @@
                 let productsHTML = "";
 
                 rows.forEach(row => {
-                    const id = row.c[0]?.v || "N/A";
-                    const name = row.c[1]?.v || "No Name";
-                    const imageUrl = row.c[2]?.v || "https://via.placeholder.com/150";
+                    const name = row.c[0]?.v || "No Name";
+                    const imageUrl = row.c[1]?.v || "https://via.placeholder.com/150"; 
+                    const productId = row.c[2]?.v || "N/A";
                     const specifications = row.c[3]?.v || "No Specifications";
                     const keyFeatures = row.c[4]?.v || "No Features";
                     const description = row.c[5]?.v || "No Description";
@@ -69,12 +69,12 @@
                         <div class="product">
                             <img src="${imageUrl}" alt="${name}">
                             <h3>${name}</h3>
-                            <p><strong>ID:</strong> ${id}</p>
+                            <p><strong>ID:</strong> ${productId}</p>
                             <p><strong>Specifications:</strong> ${specifications}</p>
                             <p><strong>Features:</strong> ${keyFeatures}</p>
                             <p><strong>Description:</strong> ${description}</p>
                             <p><strong>Price: ₹${price}</strong></p>
-                            <button onclick="addToCart('${id}', '${name}', ${price}, '${imageUrl}', '${specifications}', '${keyFeatures}', '${description}')">Add to Cart</button>
+                            <button onclick="addToCart('${name}', '${productId}', ${price}, '${imageUrl}', '${specifications}', '${keyFeatures}', '${description}')">Add to Cart</button>
                         </div>
                     `;
                 });
@@ -83,8 +83,8 @@
                 updateCart();
             });
 
-        function addToCart(id, name, price, imageUrl, specifications, keyFeatures, description) {
-            cart.push({ id, name, price, imageUrl, specifications, keyFeatures, description });
+        function addToCart(name, productId, price, imageUrl, specifications, keyFeatures, description) {
+            cart.push({ name, productId, price, imageUrl, specifications, keyFeatures, description });
             localStorage.setItem("cart", JSON.stringify(cart)); 
             updateCart();
         }
@@ -95,7 +95,7 @@
             let totalPrice = 0;
 
             cart.forEach((item, index) => {
-                cartHTML += `<p><img src="${item.imageUrl}" width="50"> ${item.name} (ID: ${item.id}) - ₹${item.price} <button onclick="removeFromCart(${index})">Remove</button></p>`;
+                cartHTML += `<p><img src="${item.imageUrl}" width="50"> ${item.name} (ID: ${item.productId}) - ₹${item.price} <button onclick="removeFromCart(${index})">Remove</button></p>`;
                 totalPrice += item.price;
             });
 
@@ -121,44 +121,6 @@
             }
             document.getElementById("cart-container").style.display = "none";
             document.getElementById("checkout-container").style.display = "block";
-        }
-
-        emailjs.init("DatvWfInkJJVSo63s");
-
-        function confirmOrder() {
-            const name = document.getElementById("name").value;
-            const address = document.getElementById("address").value;
-            const phone = document.getElementById("phone").value;
-            const paymentMethod = document.getElementById("payment-method").value;
-
-            if (!name || !address || !phone) {
-                alert("Please fill all details!");
-                return;
-            }
-
-            let orderDetails = cart.map(item => `• ${item.name} (ID: ${item.id}) - ₹${item.price} \n Specifications: ${item.specifications} \n Features: ${item.keyFeatures} \n Description: ${item.description}`).join("\n\n");
-
-            let totalPrice = cart.reduce((sum, item) => sum + item.price, 0);
-
-            let templateParams = {
-                user_name: name,
-                user_address: address,
-                user_phone: phone,
-                payment_method: paymentMethod,
-                order_details: orderDetails,
-                total_price: `₹${totalPrice}`
-            };
-
-            emailjs.send("service_61rkqgd", "template_yraji6o", templateParams)
-            .then(response => {
-                alert("Order placed successfully!");
-                cart = [];
-                localStorage.removeItem("cart");
-                updateCart();
-                document.getElementById("checkout-container").style.display = "none";
-            }, error => {
-                alert("Failed to send email. Please try again.");
-            });
         }
 
         function clearCart() {
