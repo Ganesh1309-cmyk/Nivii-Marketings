@@ -57,54 +57,34 @@
                 let productsHTML = "";
 
                 rows.forEach(row => {
-                    const name = row.c[0]?.v || "No Name";
-                    const imageUrl = row.c[1]?.v || "https://via.placeholder.com/150";
-                    const specifications = row.c[2]?.v || "No Specifications";
-                    const keyFeatures = row.c[3]?.v || "No Features";
-                    const description = row.c[4]?.v || "No Description";
-                    const price = row.c[5]?.v || 0;
-                    const productSlug = encodeURIComponent(name.replace(/\s+/g, '-').toLowerCase());
+                    const id = row.c[0]?.v || "N/A";
+                    const name = row.c[1]?.v || "No Name";
+                    const imageUrl = row.c[2]?.v || "https://via.placeholder.com/150";
+                    const specifications = row.c[3]?.v || "No Specifications";
+                    const keyFeatures = row.c[4]?.v || "No Features";
+                    const description = row.c[5]?.v || "No Description";
+                    const price = row.c[6]?.v || 0;
 
                     productsHTML += `
                         <div class="product">
-                            <a href="?product=${productSlug}">
-                                <img src="${imageUrl}" alt="${name}">
-                                <h3>${name}</h3>
-                            </a>
+                            <img src="${imageUrl}" alt="${name}">
+                            <h3>${name}</h3>
+                            <p><strong>ID:</strong> ${id}</p>
+                            <p><strong>Specifications:</strong> ${specifications}</p>
+                            <p><strong>Features:</strong> ${keyFeatures}</p>
+                            <p><strong>Description:</strong> ${description}</p>
                             <p><strong>Price: ₹${price}</strong></p>
-                            <button onclick="addToCart('${name}', ${price}, '${imageUrl}', '${specifications}', '${keyFeatures}', '${description}')">Add to Cart</button>
+                            <button onclick="addToCart('${id}', '${name}', ${price}, '${imageUrl}', '${specifications}', '${keyFeatures}', '${description}')">Add to Cart</button>
                         </div>
                     `;
                 });
 
                 document.getElementById("products").innerHTML = productsHTML;
                 updateCart();
-                checkProductPage(rows);
             });
 
-        function checkProductPage(rows) {
-            const urlParams = new URLSearchParams(window.location.search);
-            const productSlug = urlParams.get('product');
-            if (productSlug) {
-                const product = rows.find(row => encodeURIComponent(row.c[0]?.v.replace(/\s+/g, '-').toLowerCase()) === productSlug);
-                if (product) {
-                    document.body.innerHTML = `
-                        <h1>${product.c[0]?.v}</h1>
-                        <img src="${product.c[1]?.v}" alt="${product.c[0]?.v}" width="300">
-                        <p><strong>Specifications:</strong> ${product.c[2]?.v}</p>
-                        <p><strong>Features:</strong> ${product.c[3]?.v}</p>
-                        <p><strong>Description:</strong> ${product.c[4]?.v}</p>
-                        <p><strong>Price: ₹${product.c[5]?.v}</strong></p>
-                        <button onclick="addToCart('${product.c[0]?.v}', ${product.c[5]?.v}, '${product.c[1]?.v}', '${product.c[2]?.v}', '${product.c[3]?.v}', '${product.c[4]?.v}')">Add to Cart</button>
-                        <br><br>
-                        <a href="index.html">Back to Products</a>
-                    `;
-                }
-            }
-        }
-
-        function addToCart(name, price, imageUrl, specifications, keyFeatures, description) {
-            cart.push({ name, price, imageUrl, specifications, keyFeatures, description });
+        function addToCart(id, name, price, imageUrl, specifications, keyFeatures, description) {
+            cart.push({ id, name, price, imageUrl, specifications, keyFeatures, description });
             localStorage.setItem("cart", JSON.stringify(cart)); 
             updateCart();
         }
@@ -115,7 +95,7 @@
             let totalPrice = 0;
 
             cart.forEach((item, index) => {
-                cartHTML += `<p><img src="${item.imageUrl}" width="50"> ${item.name} - ₹${item.price} <button onclick="removeFromCart(${index})">Remove</button></p>`;
+                cartHTML += `<p><img src="${item.imageUrl}" width="50"> ${item.name} (ID: ${item.id}) - ₹${item.price} <button onclick="removeFromCart(${index})">Remove</button></p>`;
                 totalPrice += item.price;
             });
 
@@ -156,13 +136,29 @@
                 return;
             }
 
-            let orderDetails = cart.map(item => `• ${item.name} - ₹${item.price}`).join("\n\n");
+            let orderDetails = cart.map(item => `• ${item.name} (ID: ${item.id}) - ₹${item.price} \n Specifications: ${item.specifications} \n Features: ${item.keyFeatures} \n Description: ${item.description}`).join("\n\n");
+
             let totalPrice = cart.reduce((sum, item) => sum + item.price, 0);
 
-            alert("Order Confirmed!");
-            cart = [];
-            localStorage.removeItem("cart");
-            updateCart();
+            let templateParams = {
+                user_name: name,
+                user_address: address,
+                user_phone: phone,
+                payment_method: paymentMethod,
+                order_details: orderDetails,
+                total_price: `₹${totalPrice}`
+            };
+
+            emailjs.send("service_61rkqgd", "template_yraji6o", templateParams)
+            .then(response => {
+                alert("Order placed successfully!");
+                cart = [];
+                localStorage.removeItem("cart");
+                updateCart();
+                document.getElementById("checkout-container").style.display = "none";
+            }, error => {
+                alert("Failed to send email. Please try again.");
+            });
         }
 
         function clearCart() {
