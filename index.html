@@ -63,14 +63,14 @@
                     const keyFeatures = row.c[3]?.v || "No Features";
                     const description = row.c[4]?.v || "No Description";
                     const price = row.c[5]?.v || 0;
+                    const productSlug = encodeURIComponent(name.replace(/\s+/g, '-').toLowerCase());
 
                     productsHTML += `
                         <div class="product">
-                            <img src="${imageUrl}" alt="${name}">
-                            <h3>${name}</h3>
-                            <p><strong>Specifications:</strong> ${specifications}</p>
-                            <p><strong>Features:</strong> ${keyFeatures}</p>
-                            <p><strong>Description:</strong> ${description}</p>
+                            <a href="?product=${productSlug}">
+                                <img src="${imageUrl}" alt="${name}">
+                                <h3>${name}</h3>
+                            </a>
                             <p><strong>Price: ₹${price}</strong></p>
                             <button onclick="addToCart('${name}', ${price}, '${imageUrl}', '${specifications}', '${keyFeatures}', '${description}')">Add to Cart</button>
                         </div>
@@ -79,7 +79,29 @@
 
                 document.getElementById("products").innerHTML = productsHTML;
                 updateCart();
+                checkProductPage(rows);
             });
+
+        function checkProductPage(rows) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const productSlug = urlParams.get('product');
+            if (productSlug) {
+                const product = rows.find(row => encodeURIComponent(row.c[0]?.v.replace(/\s+/g, '-').toLowerCase()) === productSlug);
+                if (product) {
+                    document.body.innerHTML = `
+                        <h1>${product.c[0]?.v}</h1>
+                        <img src="${product.c[1]?.v}" alt="${product.c[0]?.v}" width="300">
+                        <p><strong>Specifications:</strong> ${product.c[2]?.v}</p>
+                        <p><strong>Features:</strong> ${product.c[3]?.v}</p>
+                        <p><strong>Description:</strong> ${product.c[4]?.v}</p>
+                        <p><strong>Price: ₹${product.c[5]?.v}</strong></p>
+                        <button onclick="addToCart('${product.c[0]?.v}', ${product.c[5]?.v}, '${product.c[1]?.v}', '${product.c[2]?.v}', '${product.c[3]?.v}', '${product.c[4]?.v}')">Add to Cart</button>
+                        <br><br>
+                        <a href="index.html">Back to Products</a>
+                    `;
+                }
+            }
+        }
 
         function addToCart(name, price, imageUrl, specifications, keyFeatures, description) {
             cart.push({ name, price, imageUrl, specifications, keyFeatures, description });
@@ -134,30 +156,13 @@
                 return;
             }
 
-            let orderDetails = cart.map(item => `• ${item.name} - ₹${item.price} \n Specifications: ${item.specifications} \n Features: ${item.keyFeatures} \n Description: ${item.description}`).join("\n\n");
-
+            let orderDetails = cart.map(item => `• ${item.name} - ₹${item.price}`).join("\n\n");
             let totalPrice = cart.reduce((sum, item) => sum + item.price, 0);
 
-            let templateParams = {
-                user_name: name,
-                user_address: address,
-                user_phone: phone,
-                payment_method: paymentMethod,
-                order_details: orderDetails,
-                total_price: `₹${totalPrice}`
-            };
-
-            emailjs.send("service_61rkqgd", "template_yraji6o", templateParams)
-            .then(response => {
-                alert("Order placed successfully! You will receive a confirmation email.");
-                cart = [];
-                localStorage.removeItem("cart");
-                updateCart();
-                document.getElementById("checkout-container").style.display = "none";
-            }, error => {
-                console.error("Error:", error);
-                alert("Failed to send email. Please try again.");
-            });
+            alert("Order Confirmed!");
+            cart = [];
+            localStorage.removeItem("cart");
+            updateCart();
         }
 
         function clearCart() {
